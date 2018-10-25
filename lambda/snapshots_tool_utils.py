@@ -204,8 +204,9 @@ def get_own_snapshots_dest(pattern, response):
     return filtered
 
 
-def copy_local(snapshot_identifier, snapshot_object):
-    client = boto3.client('rds', region_name=_REGION)
+def copy_local(snapshot_identifier, snapshot_object, client = None):
+    if client is None:
+        client = boto3.client('rds', region_name=_REGION)
 
     tags = [{
             'Key': 'CopiedBy',
@@ -233,8 +234,9 @@ def copy_local(snapshot_identifier, snapshot_object):
     return response
 
 
-def copy_remote(snapshot_identifier, snapshot_object):
-    client = boto3.client('rds', region_name=_DESTINATION_REGION)
+def copy_remote(snapshot_identifier, snapshot_object, client = None):
+    if client is None:
+        client = boto3.client('rds', region_name=_DESTINATION_REGION)
 
     if snapshot_object['StorageEncrypted']:
         logger.info('Copying encrypted snapshot %s to remote region %s' %
@@ -391,4 +393,3 @@ def search_tag_copied(response):
         return False
 
     return False
-

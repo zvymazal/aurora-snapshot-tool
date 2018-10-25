@@ -48,18 +48,23 @@ def lambda_handler(event, context):
         response_tags = client.list_tags_for_resource(
             ResourceName=snapshot_arn)
 
-        if snapshot_object['Status'].lower() == 'available' and search_tag_share(response_tags):
-            try:
-                # Share snapshot with dest_account
-                response_modify = client.modify_db_cluster_snapshot_attribute(
-                    DBClusterSnapshotIdentifier=snapshot_identifier,
-                    AttributeName='restore',
-                    ValuesToAdd=[
-                        DEST_ACCOUNTID
-                    ]
-                )
-            except Exception as e:
-                logger.error('Exception sharing {}: {}'.format(snapshot_identifier, e))
+        if search_tag_share(response_tags):
+            if snapshot_object['Status'].lower() == 'available':
+                try:
+                    # Share snapshot with dest_account
+                    response_modify = client.modify_db_cluster_snapshot_attribute(
+                        DBClusterSnapshotIdentifier=snapshot_identifier,
+                        AttributeName='restore',
+                        ValuesToAdd=[
+                            DEST_ACCOUNTID
+                        ]
+                    )
+                except Exception as e:
+                    logger.error('Exception sharing {}: {}'.format(snapshot_identifier, e))
+                    pending_snapshots += 1
+
+            elif snapshot_object['Status'].lower() == 'copying':
+                logger.warn('Snapshot not in available state: {}'.format(snapshot_identifier))
                 pending_snapshots += 1
 
     if pending_snapshots > 0:
